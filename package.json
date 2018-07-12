@@ -1,0 +1,31 @@
+{
+  "name": "minipack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node src/minipack.ts",
+    "test": "NODE_PATH=src mocha --require espower-typescript/guess test/**/*.ts",
+    "test:watch": "NODE_PATH=src mocha --require espower-typescript/guess test/**/*.ts --watch-extensions ts --watch",
+    "lint": "tslint --format verbose -c tslint.json 'src/**/*.{ts,tsx}' 'test/**/*.{ts,tsx}'",
+    "lint:fix": "tslint --fix --format verbose -c tslint.json 'src/**/*.{ts,tsx}' 'test/**/*.{ts,tsx}'",
+    "format": "prettier --ignore-path .gitignore --config .prettierrc --write 'src/**/!(*.json|*.jpg|*.pug|*.html|*.png|*.webp|*.svg)' 'test/**/!(*.json|*.jpg|*.pug|*.html|*.png|*.webp|*.svg)'",
+    "precommit": "npm run lint:fix && npm run format"
+  },
+  "author": "khirayama",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mocha": "5.2.4",
+    "@types/node": "10.5.2",
+    "espower-typescript": "9.0.0",
+    "mocha": "5.2.0",
+    "power-assert": "1.6.0",
+    "prettier": "1.13.7",
+    "ts-node": "7.0.0",
+    "tslint": "5.10.0",
+    "tslint-config-prettier": "1.13.0",
+    "tslint-microsoft-contrib": "5.0.3",
+    "tslint-plugin-prettier": "1.3.0",
+    "typescript": "2.9.2"
+  }
+}
