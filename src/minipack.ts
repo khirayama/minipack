@@ -1,21 +1,97 @@
-export interface IModule {
-  id: any;
-  mapping: any;
-  code: any;
+import * as fs from 'fs';
+import * as path from 'path';
+
+import { transformFromAst } from '@babel/core';
+import traverse from '@babel/traverse';
+import * as babylon from 'babylon';
+
+export interface IAsset {
+  id: number;
+  filename: string;
+  mapping: {
+    [key: string]: number;
+  };
+  dependencies: string[];
+  code: string;
 }
 
-export function createGraph(entryPoint: string): IModule[] {
-  return [{
-    id: 1,
-    mapping: 'mapping',
-    code: 'code',
-  }];
+export class Identifier {
+  public id: number = 0;
+
+  public getAndInclement(): number {
+    const id: number = this.id;
+    this.id += 1;
+
+    return id;
+  }
 }
 
-export function buildModuleString(graph: IModule[]): string {
+export function createAsset(filename: string, identifier: Identifier): IAsset {
+  const content: string = fs.readFileSync(filename, 'utf-8');
+
+  // https://github.com/babel/babel/blob/98ff2ce87747df3a62fff97a508af5451ba12eae/packages/babel-core/src/transform-ast.js
+  // type AstRoot = BabelNodeFile | BabelNodeProgram;
+  // tslint:disable-next-line:no-any
+  const ast: any = babylon.parse(content, {
+    sourceType: 'module',
+  });
+
+  const dependencies: string[] = [];
+
+  traverse(ast, {
+    // tslint:disable-next-line:no-any
+    enter(astPath: any): void {
+      if (astPath.node.source) {
+        dependencies.push(astPath.node.source.value);
+      }
+    },
+  });
+
+  const babelOptions: { [key: string]: string[] } = {
+    presets: ["@babel/preset-env"]
+  };
+
+  // https://github.com/babel/babel/blob/98ff2ce87747df3a62fff97a508af5451ba12eae/packages/babel-core/src/transform-ast.js#L24
+  // FileResult
+  // tslint:disable-next-line:no-any
+  const res: any = transformFromAst(ast, null, babelOptions);
+
+  const id: number = identifier.getAndInclement();
+
+  return {
+    id: id,
+    filename,
+    dependencies,
+    code: res.code,
+    mapping: {},
+  };
+}
+
+export function createGraph(entryFilename: string): IAsset[] {
+  const identifier: Identifier = new Identifier();
+
+  const rootAsset: IAsset = createAsset(entryFilename, identifier);
+
+  const graph: IAsset[] = [rootAsset];
+
+  for (const asset of graph) {
+    const dirname: string = path.dirname(asset.filename);
+
+    asset.dependencies.forEach((relativePath: string) => {
+      const absolutePath: string = path.join(dirname, relativePath);
+      const child: IAsset = createAsset(absolutePath, identifier);
+      asset.mapping[relativePath] = child.id;
+      graph.push(child);
+    });
+  }
+
+  return graph;
+}
+
+export function buildModuleString(graph: IAsset[]): string {
   let moduleString: string = '';
 
-  graph.forEach((mod: IModule) => {
+  graph.forEach((mod: IAsset) => {
     moduleString += `${mod.id}: [
       function(require, module, exports) {
         ${mod.code}
@@ -27,9 +103,7 @@ export function buildModuleString(graph: IModule[]): string {
   return moduleString;
 }
 
-export function bundle(graph: IModule[]): string {
-  const moduleString: string = buildModuleString(graph);
-
+export function bundle(moduleString: string): string {
   return `
     (function(modules) {
       function require(id) {

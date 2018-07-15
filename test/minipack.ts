@@ -1,16 +1,20 @@
 import * as assert from 'power-assert';
 
-import { buildModuleString, bundle, createGraph, IModule } from 'minipack';
+// tslint:disable-next-line:no-relative-imports
+import { buildModuleString, bundle, createAsset, createGraph, IAsset, Identifier } from '../src/minipack';
 
-const sampleGraph1: IModule[] = [{
-  id: 1,
-  mapping: {
-    key1: 'val1',
-    key2: 'val2',
+const sampleGraph1: IAsset[] = [
+  {
+    id: 1,
+    filename: 'sample.js',
+    mapping: {
+      key1: 1,
+      key2: 2,
+    },
+    dependencies: [],
+    code: 'console.log("Call function");',
   },
-  code: 'console.log("Call function");',
-}];
-
+];
 
 function minifyForCompare(str: string): string {
   const lines: string[] = str.split('\n');
@@ -27,13 +31,55 @@ describe('minifyForCompare', () => {
 });
 
 describe('minipack', () => {
+  describe('createAsset', () => {
+    it('Create example asset', () => {
+      const expected: IAsset = {
+        id: 0,
+        filename: './example/entry.js',
+        dependencies: ['./message.js'],
+        code: "import message from './message.js';\nconsole.log(message);",
+        mapping: {},
+      };
+      const identifier: Identifier = new Identifier();
+      const actual: IAsset = createAsset('./example/entry.js', identifier);
+      assert.deepEqual(actual, expected);
+    });
+  });
 
   describe('createGraph', () => {
+    it('Create example asset', () => {
+      const expected: IAsset[] = [
+        {
+          id: 0,
+          filename: './example/entry.js',
+          dependencies: ['./message.js'],
+          code: "import message from './message.js';\nconsole.log(message);",
+          mapping: { './message.js': 1 },
+        },
+        {
+          id: 1,
+          filename: 'example/message.js',
+          dependencies: ['./name.js'],
+          // tslint:disable-next-line:no-invalid-template-strings
+          code: "import { name } from './name.js';\nexport default `hello ${name}!`;",
+          mapping: { './name.js': 2 },
+        },
+        {
+          id: 2,
+          filename: 'example/name.js',
+          dependencies: [],
+          code: "export const name = 'world';",
+          mapping: {},
+        },
+      ];
+      const actual: IAsset[] = createGraph('./example/entry.js');
+      assert.deepEqual(actual, expected);
+    });
   });
 
   describe('buildModuleString', () => {
     it('Single module graph', () => {
-      const mod1: IModule = sampleGraph1[0];
+      const mod1: IAsset = sampleGraph1[0];
       const expected: string = `
         ${mod1.id}: [function(require, module, exports) {
           ${mod1.code}
@@ -73,7 +119,7 @@ describe('minipack', () => {
           require(0);
         })({${buildModuleString(sampleGraph1)}});
       `;
-      const actual: string = bundle(sampleGraph1);
+      const actual: string = bundle(buildModuleString(sampleGraph1));
 
       // tslint:disable-next-line:no-eval
       assert.doesNotThrow(() => eval(actual));
@@ -83,13 +129,13 @@ describe('minipack', () => {
 
   describe('End to End', () => {
     it('runable', () => {
-      // const entryPoint: string = './example/entry.js';
-      // const graph: IModule[] = createGraph(entryPoint);
-      // const result: string = bundle(graph);
-      //
-      // // tslint:disable-next-line:no-console
-      // console.log('result: ', result);
-      // assert.equal(result, './example/entry.js');
+      const entryPoint: string = './example/entry.js';
+      const graph: IAsset[] = createGraph(entryPoint);
+      const moduleString: string = buildModuleString(graph);
+      const result: string = bundle(moduleString);
+      const actual: string = minifyForCompare(result);
+      console.log(result);
+      assert.doesNotThrow(() => eval(actual));
     });
   });
 });
