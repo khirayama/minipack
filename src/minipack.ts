@@ -1,3 +1,6 @@
+// Doc: https://github.com/ronami/minipack
+// Doc: https://babeljs.io/docs/en/next/index.html
+// Doc: https://github.com/jamiebuilds/babel-handbook/blob/master/translations/ja/plugin-handbook.md
 import * as fs from 'fs';
 import * as path from 'path';
 
