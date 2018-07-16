@@ -1,3 +1,4 @@
+// tslint:disable:no-eval
 import * as assert from 'power-assert';
 
 // tslint:disable-next-line:no-relative-imports
@@ -37,7 +38,8 @@ describe('minipack', () => {
         id: 0,
         filename: './example/entry.js',
         dependencies: ['./message.js'],
-        code: "import message from './message.js';\nconsole.log(message);",
+        code:
+          '"use strict";\n\nvar _message = _interopRequireDefault(require("./message.js"));\n\nfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }\n\nconsole.log(_message.default);',
         mapping: {},
       };
       const identifier: Identifier = new Identifier();
@@ -53,7 +55,8 @@ describe('minipack', () => {
           id: 0,
           filename: './example/entry.js',
           dependencies: ['./message.js'],
-          code: "import message from './message.js';\nconsole.log(message);",
+          code:
+            '"use strict";\n\nvar _message = _interopRequireDefault(require("./message.js"));\n\nfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }\n\nconsole.log(_message.default);',
           mapping: { './message.js': 1 },
         },
         {
@@ -61,14 +64,16 @@ describe('minipack', () => {
           filename: 'example/message.js',
           dependencies: ['./name.js'],
           // tslint:disable-next-line:no-invalid-template-strings
-          code: "import { name } from './name.js';\nexport default `hello ${name}!`;",
+          code:
+            '"use strict";\n\nObject.defineProperty(exports, "__esModule", {\n  value: true\n});\nexports.default = void 0;\n\nvar _name = require("./name.js");\n\nvar _default = "hello ".concat(_name.name, "!");\n\nexports.default = _default;',
           mapping: { './name.js': 2 },
         },
         {
           id: 2,
           filename: 'example/name.js',
           dependencies: [],
-          code: "export const name = 'world';",
+          code:
+            '"use strict";\n\nObject.defineProperty(exports, "__esModule", {\n  value: true\n});\nexports.name = void 0;\nvar name = \'world\';\nexports.name = name;',
           mapping: {},
         },
       ];
@@ -134,7 +139,6 @@ describe('minipack', () => {
       const moduleString: string = buildModuleString(graph);
       const result: string = bundle(moduleString);
       const actual: string = minifyForCompare(result);
-      console.log(result);
       assert.doesNotThrow(() => eval(actual));
     });
   });
