@@ -1,9 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { transformFromAst } from '@babel/core';
+import * as babel from '@babel/core';
 import traverse from '@babel/traverse';
-import * as babylon from 'babylon';
 
 export interface IAsset {
   id: number;
@@ -32,7 +31,7 @@ export function createAsset(filename: string, identifier: Identifier): IAsset {
   // https://github.com/babel/babel/blob/98ff2ce87747df3a62fff97a508af5451ba12eae/packages/babel-core/src/transform-ast.js
   // type AstRoot = BabelNodeFile | BabelNodeProgram;
   // tslint:disable-next-line:no-any
-  const ast: any = babylon.parse(content, {
+  const ast: any = babel.parse(content, {
     sourceType: 'module',
   });
 
@@ -47,14 +46,15 @@ export function createAsset(filename: string, identifier: Identifier): IAsset {
     },
   });
 
-  const babelOptions: { [key: string]: string[] } = {
-    presets: ["@babel/preset-env"]
+  // tslint:disable-next-line:no-any
+  const babelOptions: any = {
+    presets: ['@babel/preset-env'],
   };
 
   // https://github.com/babel/babel/blob/98ff2ce87747df3a62fff97a508af5451ba12eae/packages/babel-core/src/transform-ast.js#L24
   // FileResult
   // tslint:disable-next-line:no-any
-  const res: any = transformFromAst(ast, null, babelOptions);
+  const res: any = babel.transformFromAstSync(ast, content, babelOptions);
 
   const id: number = identifier.getAndInclement();
 
